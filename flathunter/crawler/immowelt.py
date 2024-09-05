@@ -45,73 +45,74 @@ class Immowelt(Crawler):
         expose['from'] = date
         return expose
 
-    # pylint: disable=too-many-locals
+    BASE_URL = "https://www.immowelt.de"
+
     def extract_data(self, soup: BeautifulSoup):
         """Extracts all exposes from a provided Soup object"""
         entries = []
-        soup_res = soup.find("main")
-        if not isinstance(soup_res, Tag):
+        # Находим все элементы с data-testid="serp-card-testid"
+        soup_res = soup.find_all("div", {"data-testid": "serp-card-testid"})
+        if not soup_res:
             return []
 
-        title_elements = soup_res.find_all("h2")
-        expose_ids = soup_res.find_all("a", id=True)
-
-        for idx, title_el in enumerate(title_elements):
+        # Перебираем все найденные объявления
+        for card in soup_res:
             try:
-                price = expose_ids[idx].find(
-                    "div", attrs={"data-test": "price"}).text
-            except IndexError:
+                title_el = card.find("a", {"data-testid": "card-mfe-covering-link-testid"})
+                raw_title = title_el.get("title", "").strip() if title_el else ""
+            except AttributeError:
+                raw_title = ""
+
+            try:
+                price = card.find("div", {"data-testid": "cardmfe-price-testid"}).text.strip()
+            except AttributeError:
                 price = ""
 
             try:
-                size = expose_ids[idx].find(
-                    "div", attrs={"data-test": "area"}).text
-            except IndexError:
+                size = card.find("div", {"data-testid": "cardmfe-keyfacts-testid"}).find_all("div")[2].text.strip()
+            except (IndexError, AttributeError):
                 size = ""
 
             try:
-                rooms = expose_ids[idx].find(
-                    "div", attrs={"data-test": "rooms"}).text.replace(" Zi.", "")
-            except IndexError:
+                rooms = card.find("div", {"data-testid": "cardmfe-keyfacts-testid"}).find_all("div")[
+                    0].text.strip().replace(" Zi.", "")
+            except (IndexError, AttributeError):
                 rooms = ""
 
             try:
-                url = expose_ids[idx].get("href")
-            except IndexError:
-                continue
-
-            picture = expose_ids[idx].find("picture")
-            image = None
-            if picture:
-                src = picture.find("source")
-                if src:
-                    image = src.get("data-srcset")
+                relative_url = title_el.get("href") if title_el else ""
+                url = self.BASE_URL + relative_url if relative_url else ""
+            except AttributeError:
+                url = ""
 
             try:
-                address = expose_ids[idx].find(
-                    "div", attrs={"class": re.compile("IconFact.*")}
-                  )
-                address = address.find("span").text
-            except (IndexError, AttributeError):
+                picture = card.find("img")
+                image = picture.get("src") if picture else None
+            except AttributeError:
+                image = None
+
+            try:
+                address = card.find("div", {"data-testid": "cardmfe-description-box-address"}).text.strip()
+            except AttributeError:
                 address = ""
 
-            processed_id = int(
-              hashlib.sha256(expose_ids[idx].get("id").encode('utf-8')).hexdigest(), 16
-            ) % 10**16
+            formatted_title = (
+                f"{raw_title}\n"
+            )
+
+            processed_id = int(hashlib.sha256(url.encode('utf-8')).hexdigest(), 16) % 10 ** 16 if url else None
 
             details = {
                 'id': processed_id,
                 'image': image,
                 'url': url,
-                'title': title_el.text.strip(),
+                'title': formatted_title,
                 'rooms': rooms,
                 'price': price,
                 'size': size,
                 'address': address,
-                'crawler': self.get_name()
+                'crawler': 'Immowelt'
             }
             entries.append(details)
-
-        logger.debug('Number of entries found: %d', len(entries))
 
         return entries

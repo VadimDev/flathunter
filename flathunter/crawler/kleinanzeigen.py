@@ -45,7 +45,7 @@ class Kleinanzeigen(WebdriverCrawler):
 
         try:
             title_elements = soup.find_all(lambda e: e.has_attr('class')
-                                           and 'ellipsis' in e['class'])
+                                                     and 'ellipsis' in e['class'])
         except AttributeError:
             return entries
 
@@ -71,21 +71,28 @@ class Kleinanzeigen(WebdriverCrawler):
             address = address.replace('\n', ' ').replace('\r', '')
             address = " ".join(address.split())
 
+            # Инициализация переменных по умолчанию
             rooms = ""
-            if len(tags) > 1:
-                rooms_match = re.match(r'(\d+)', tags[1].text)
-                if rooms_match is not None:
-                    rooms = rooms_match[1]
+            size = ""
 
-            try:
-                size = tags[0].text
-            except (IndexError, TypeError):
-                size = ""
+            # Проверка и извлечение данных из тегов
+            if tags:
+                for tag in tags:
+                    tag_text = tag.text.strip()
+                    if 'm²' in tag_text:
+                        size = tag_text
+                    elif 'Zimmer' in tag_text:
+                        rooms = re.match(r'(\d+)', tag_text).group(0)
+
+            formatted_title = (
+                f"{title_el.text.strip()}\n"
+            )
+
             details = {
                 'id': int(expose_ids[idx].get("data-adid")),
                 'image': image,
                 'url': ("https://www.kleinanzeigen.de" + title_el.get("href")),
-                'title': title_el.text.strip(),
+                'title': formatted_title,
                 'price': price,
                 'size': size,
                 'rooms': rooms,
