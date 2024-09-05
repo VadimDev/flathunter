@@ -1,2 +1,2 @@
 #!/bin/bash
-pipenv run python /root/flathunter/flathunt.py --config /root/flathunter/config_immowelt.yaml
+pipenv run /root/.local/share/virtualenvs/root-BuDEOXnJ/bin/python /root/flathunter/flathunt.py --config /root/flathunter/config_immowelt.yaml
