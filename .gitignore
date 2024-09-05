@@ -90,7 +90,7 @@ ENV/
 .ropeproject
 
 .webkit_cache/
-processed_ids.db
+# processed_ids.db
 
 .idea/
 config.yaml
