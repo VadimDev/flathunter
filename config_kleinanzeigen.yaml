@@ -183,6 +183,7 @@ telegram:
   receiver_ids:
   - '6835868494'
   - '397277789'
+  - '818206505'
 
 # Sending messages via mattermost requires a webhook url provided by a
 # mattermost server. You can find a description how to set up a webhook with
