@@ -1,2 +1,2 @@
 #!/bin/bash
-pipenv run python flathunt.py --config config_immowelt.yaml
+pipenv run python /root/flathunter/flathunt.py --config /root/flathunter/config_immowelt.yaml
