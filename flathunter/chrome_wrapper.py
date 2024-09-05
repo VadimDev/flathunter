@@ -7,18 +7,16 @@ import undetected_chromedriver as uc
 from flathunter.logging import logger
 from flathunter.exceptions import ChromeNotFound
 
+# Регулярное выражение для поиска версии Chromium
 CHROME_VERSION_REGEXP = re.compile(r'.* (\d+\.\d+\.\d+\.\d+)( .*)?')
-WINDOWS_CHROME_REG_PATH = r'HKEY_CURRENT_USER\Software\Google\Chrome\BLBeacon'
-WINDOWS_CHROME_REG_REGEXP = re.compile(r'\s*version\s*REG_SZ\s*(\d+)\..*')
-CHROME_BINARY_NAMES = ['google-chrome', 'chromium', 'chrome', 'chromium-browser',
-                       '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+CHROME_BINARY_NAMES = ['chromium-browser', 'chromium']
 
 def get_command_output(args) -> List[str]:
     """Run a command and return stdout"""
     try:
         with subprocess.Popen(args,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                    universal_newlines=True) as process:
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              universal_newlines=True) as process:
             if process.stdout is None:
                 return []
             return process.stdout.readlines()
@@ -40,12 +38,12 @@ def get_chrome_version() -> int:
             pass
     raise ChromeNotFound()
 
-def get_chrome_driver(driver_arguments):
+def get_chrome_driver(driver_arguments=None):
     """Configure Chrome WebDriver"""
     logger.info('Initializing Chrome WebDriver for crawler...')
     chrome_options = uc.ChromeOptions()  # pylint: disable=no-member
 
-    # Указываем путь к бинарнику Chromium
+    # Указываем путь к бинарнику Chromium для ARM
     chrome_options.binary_location = "/usr/bin/chromium-browser"
 
     if platform == "darwin":
@@ -53,9 +51,14 @@ def get_chrome_driver(driver_arguments):
     if driver_arguments is not None:
         for driver_argument in driver_arguments:
             chrome_options.add_argument(driver_argument)
-    chrome_version = get_chrome_version()
-    chrome_options.add_argument("--headless=new")
-    driver = uc.Chrome(version_main=chrome_version, options=chrome_options)  # pylint: disable=no-member
+
+    # На ARM используем chromium, так что может не быть необходимости в проверке версии
+    try:
+        chrome_version = get_chrome_version()
+        driver = uc.Chrome(version_main=chrome_version, options=chrome_options)  # pylint: disable=no-member
+    except ChromeNotFound:
+        # Если Chrome или Chromium не найден, используем по умолчанию Chromium
+        driver = uc.Chrome(options=chrome_options)  # pylint: disable=no-member
 
     driver.execute_cdp_cmd(
         "Network.setUserAgentOverride",
@@ -67,6 +70,6 @@ def get_chrome_driver(driver_arguments):
     )
 
     driver.execute_cdp_cmd('Network.setBlockedURLs',
-        {"urls": ["https://api.geetest.com/get.*"]})
+                           {"urls": ["https://api.geetest.com/get.*"]})
     driver.execute_cdp_cmd('Network.enable', {})
     return driver
