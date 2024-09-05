@@ -10,7 +10,7 @@ from flathunter.logging import logger
 from flathunter.exceptions import ChromeNotFound
 
 CHROME_VERSION_REGEXP = re.compile(r'.* (\d+\.\d+\.\d+\.\d+)( .*)?')
-CHROME_BINARY_NAMES = ['chromium-browser', 'chromium']
+CHROME_BINARY_NAMES = ['chromium']
 
 def get_command_output(args) -> List[str]:
     """Run a command and return stdout"""
@@ -45,7 +45,7 @@ def get_chrome_driver(driver_arguments=None):
     chrome_options = ChromeOptions()
 
     # Указываем путь к бинарнику Chromium для ARM
-    chrome_options.binary_location = "/usr/bin/chromium-browser"
+    chrome_options.binary_location = "/usr/bin/chromium"
 
     if platform == "darwin":
         chrome_options.add_argument("--headless")
@@ -54,7 +54,7 @@ def get_chrome_driver(driver_arguments=None):
             chrome_options.add_argument(driver_argument)
 
     # Настройка сервиса драйвера для Chromium на ARM
-    chrome_service = ChromeService(executable_path="/usr/lib/chromium-browser/chromedriver")
+    chrome_service = ChromeService(executable_path="/usr/bin/chromedriver")
 
     try:
         driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
