@@ -2,12 +2,13 @@ import re
 import subprocess
 from typing import List
 from sys import platform
-import undetected_chromedriver as uc
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 from flathunter.logging import logger
 from flathunter.exceptions import ChromeNotFound
 
-# Регулярное выражение для поиска версии Chromium
 CHROME_VERSION_REGEXP = re.compile(r'.* (\d+\.\d+\.\d+\.\d+)( .*)?')
 CHROME_BINARY_NAMES = ['chromium-browser', 'chromium']
 
@@ -41,7 +42,7 @@ def get_chrome_version() -> int:
 def get_chrome_driver(driver_arguments=None):
     """Configure Chrome WebDriver"""
     logger.info('Initializing Chrome WebDriver for crawler...')
-    chrome_options = uc.ChromeOptions()  # pylint: disable=no-member
+    chrome_options = ChromeOptions()
 
     # Указываем путь к бинарнику Chromium для ARM
     chrome_options.binary_location = "/usr/bin/chromium-browser"
@@ -52,13 +53,10 @@ def get_chrome_driver(driver_arguments=None):
         for driver_argument in driver_arguments:
             chrome_options.add_argument(driver_argument)
 
-    # На ARM используем chromium, так что может не быть необходимости в проверке версии
-    try:
-        chrome_version = get_chrome_version()
-        driver = uc.Chrome(version_main=chrome_version, options=chrome_options)  # pylint: disable=no-member
-    except ChromeNotFound:
-        # Если Chrome или Chromium не найден, используем по умолчанию Chromium
-        driver = uc.Chrome(options=chrome_options)  # pylint: disable=no-member
+    # Настройка сервиса драйвера для Chromium на ARM
+    chrome_service = ChromeService(executable_path="/usr/lib/chromium-browser/chromedriver")
+
+    driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
     driver.execute_cdp_cmd(
         "Network.setUserAgentOverride",
