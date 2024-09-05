@@ -56,7 +56,11 @@ def get_chrome_driver(driver_arguments=None):
     # Настройка сервиса драйвера для Chromium на ARM
     chrome_service = ChromeService(executable_path="/usr/lib/chromium-browser/chromedriver")
 
-    driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+    try:
+        driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+    except Exception as e:
+        logger.error(f"Failed to start Chrome WebDriver: {e}")
+        raise
 
     driver.execute_cdp_cmd(
         "Network.setUserAgentOverride",
